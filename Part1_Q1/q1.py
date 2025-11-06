@@ -116,19 +116,6 @@ def main():
     print("Creating modified SE B1 by eroding B...")
     small_se = np.ones((2, 2), dtype=np.uint8)
     B1 = custom_erosion(B, small_se)
-    if np.sum(B1) < 3:
-        print("Using alternative erosion approach...")
-        cross_se = np.array([[0, 1, 0],
-                            [1, 1, 1],
-                            [0, 1, 0]], dtype=np.uint8)
-        B1 = custom_erosion(B, cross_se)
-    if np.sum(B1) < 3:
-        print("Using minimal erosion approach...")
-        B1 = B.copy()
-        B1[0, :] = 0
-        B1[-1, :] = 0
-        B1[:, 0] = 0
-        B1[:, -1] = 0
     print(f"Modified SE B1 created: {B1.shape}, foreground pixels: {np.sum(B1)}")
     save_image(B1, './Q1_Output/PartC/SE_B1_modified.png')
     print("Performing opening operation with B1 on A...")
