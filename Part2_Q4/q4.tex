@@ -1,0 +1,131 @@
+
+
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{adjustbox} % for rotation+scaling
+\usepackage[a4paper, left=0.6in, right=0.6in, top=1in, bottom=1in]{geometry}
+\pagestyle{empty}
+
+\begin{document}
+
+\textbf{(a) Between-class variance and failure condition.}
+
+\medskip
+
+\noindent\textbf{Setup.} Background: fraction $1-p$, $X_B\sim\mathrm{Unif}[-b,b]$, mean $\mu_B=0$.
+Foreground: fraction $p$, $X_F\sim\mathrm{Unif}[1-a,1+a]$, mean $\mu_F=1$.
+Assume no overlap: $b<1-a$.
+For threshold $k$ let class~0 be $\{x\le k\}$ and class~1 be $\{x>k\}$.
+Define
+\[
+\omega_0(k)=\Pr\{x\le k\},\quad \omega_1(k)=1-\omega_0(k),
+\]
+\[
+\mu_0(k)=\mathbb{E}[x\mid x\le k],\quad \mu_1(k)=\mathbb{E}[x\mid x>k].
+\]
+Otsu maximizes
+\[
+\sigma_B^2(k)=\omega_0(k)\,\omega_1(k)\big(\mu_0(k)-\mu_1(k)\big)^2.
+\]
+
+\medskip
+
+\noindent\textbf{Case 1: $k$ in the gap $(b,\,1-a)$.}
+Then all background pixels are $\le k$ and all foreground pixels are $>k$, so
+\[
+\omega_0=1-p,\quad \omega_1=p,\quad \mu_0=0,\quad \mu_1=1,
+\]
+and
+\[
+\boxed{\sigma_B^2(k)=p(1-p)\qquad (k\in(b,\,1-a)).}
+\]
+
+\medskip
+
+\noindent\textbf{Case 2: $k\in[-b,b]$ (inside background).}
+Let
+\[
+\alpha(k)=\Pr_B\{X\le k\}=\frac{k+b}{2b}\in[0,1],
+\]
+then
+\[
+\omega_0(k)=(1-p)\alpha(k),\qquad \mu_0(k)=\frac{-b+k}{2}.
+\]
+With total mean $\mu_T=(1-p)\cdot0+p\cdot1=p$ and using
+$\mu_1=(\mu_T-\omega_0\mu_0)/\omega_1$ we get the compact form
+\[
+\boxed{\sigma_B^2(k)=\frac{\omega_0(k)\big(\mu_0(k)-p\big)^2}{1-\omega_0(k)}
+\qquad (k\in[-b,b]).}
+\]
+
+\medskip
+
+\noindent\textbf{Failure condition.}
+Compare $\max_{k\in[-b,b]}\sigma_B^2(k)$ with the gap value $p(1-p)$.
+If the interior maximum exceeds $p(1-p)$, Otsu will choose a threshold inside
+the background and thus fail to separate true classes.
+
+Differentiate $\sigma_B^2$ (equivalently work in $x=\mu_0=(k-b)/2$). Evaluating the
+derivative at the endpoint $k=b$ (i.e. $x=0$) gives
+\[
+\left.\frac{d\sigma_B^2}{dx}\right|_{x=0}=\frac{(2b-1)(p-1)}{b}.
+\]
+Since $p-1<0$, the derivative points toward larger $\sigma_B^2$ into $(-b,b)$
+iff $2b-1>0$, i.e. iff $b>\tfrac12$. Therefore, under the no-overlap assumption
+$b<1-a$, Otsu \emph{can} fail whenever
+\[
+\boxed{b>\tfrac12.}
+\]
+Intuition: a wide background (half-width $b>1/2$) can be split to produce a
+larger between-class variance than the correct gap split $p(1-p)$.
+
+\newpage
+
+\textbf{(b) One iteration of $k$-means initialized at means $0$ and $1$.}
+
+\medskip
+
+\noindent With current means $\mu^{(0)}_1=0,\ \mu^{(0)}_2=1$ the assignment
+boundary is the midpoint $x=0.5$.
+
+\begin{itemize}
+\item If $b\le\tfrac12$: the entire background $[-b,b]$ lies to the left of $0.5$,
+  so all background points are assigned to cluster~1 and all foreground points
+  to cluster~2. The recomputed means remain $(0,1)$ and $k$-means is stable
+  after one iteration (correct separation).
+
+\item If $b>\tfrac12$: a fraction of background, namely the interval $(0.5,b]$,
+  lies to the right of $0.5$ and will be assigned to cluster~2 together with all
+  foreground. The new cluster~2 mass is
+  \[
+  \omega_2' \;=\; p \;+\; (1-p)\frac{b-0.5}{2b},
+  \]
+  and its new mean is
+  \[
+  \mu_2'=\frac{p\cdot 1 \;+\; (1-p)\frac{b-0.5}{2b}\cdot\frac{0.5+b}{2}}
+                {\,p + (1-p)\frac{b-0.5}{2b}\,}\;<1.
+  \]
+  Similarly $\mu_1'>0$. Hence both means move inward, the between-class distance
+  shrinks, and the algorithm has mixed true classes (wrong clustering).
+\end{itemize}
+
+\medskip
+
+\noindent\textbf{Agreement with (a).} This matches part (a): the critical value
+is $b=\tfrac12$. If $b\le\tfrac12$ the midpoint $0.5$ cleanly separates the supports
+and both Otsu and $k$-means succeed; if $b>\tfrac12$ the midpoint cuts into the
+background, causing misassignment for $k$-means and producing a larger
+between-class variance inside the background for Otsu. The root cause is the
+large background spread relative to the inter-class distance $1$.
+
+
+
+\end{document}
+
+
