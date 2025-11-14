@@ -14,7 +14,7 @@ def save_image(img, path, cmap='gray'):
         plt.imsave(path, img, cmap=cmap)
     else:
         plt.imsave(path, cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-def part_a_canny_edge_detection(image_path, output_dir, gaussian_ksize=5, sigma=1.4, high_thresh=60, low_thresh=30):
+def part_a_canny_edge_detection(image_path, output_dir, gaussian_ksize=5, sigma=1.4, high_thresh=180, low_thresh=150):
     print("======Part-A processing...======")
     ensure_dir(output_dir)
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
