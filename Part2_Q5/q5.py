@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import heapq
 
 def ensure_dir(path):
     if not os.path.exists(path):
@@ -232,12 +233,58 @@ def rms_gradient_rgb(image_bgr):
     rms = np.sqrt(np.mean(grads ** 2, axis=2))
     return rms
 
+def watershed_from_markers(grad, markers):
+    h, w = grad.shape
+    labels = np.zeros((h, w), dtype=np.int32)
+    inqueue = np.zeros((h, w), dtype=bool)
+    neighs = [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]
+    unique_seeds = np.unique(markers)
+    labels[markers > 0] = markers[markers > 0]
+    pq = []
+    ys, xs = np.nonzero(markers > 0)
+    for (y, x) in zip(ys, xs):
+        seed_label = int(markers[y, x])
+        for dy, dx in neighs:
+            ny, nx = y + dy, x + dx
+            if 0 <= ny < h and 0 <= nx < w:
+                if labels[ny, nx] == 0 and not inqueue[ny, nx]:
+                    heapq.heappush(pq, (float(grad[ny, nx]), seed_label, ny, nx))
+                    inqueue[ny, nx] = True
+    while pq:
+        prio, seed_label, y, x = heapq.heappop(pq)
+        inqueue[y, x] = False  # popped
+        if labels[y, x] == 0:
+            labels[y, x] = seed_label
+            for dy, dx in neighs:
+                ny, nx = y + dy, x + dx
+                if 0 <= ny < h and 0 <= nx < w:
+                    if labels[ny, nx] == 0 and not inqueue[ny, nx]:
+                        heapq.heappush(pq, (float(grad[ny, nx]), seed_label, ny, nx))
+                        inqueue[ny, nx] = True
+                    elif labels[ny, nx] > 0 and labels[ny, nx] != seed_label:
+                        labels[y, x] = -1
+        else:
+            if labels[y, x] > 0 and labels[y, x] != seed_label:
+                labels[y, x] = -1
+    return labels
+
 def watershed_segmentation(image_bgr, smooth_sigma=1.0):
     h, w, _ = image_bgr.shape
     ksize = int(6 * smooth_sigma + 1)
     if ksize % 2 == 0:
         ksize += 1
     smooth = cv2.GaussianBlur(image_bgr, (ksize, ksize), smooth_sigma)
+    def rms_gradient_rgb(img):
+        grads = []
+        for c in range(3):
+            channel = img[:, :, c].astype(np.float32)
+            gx = cv2.Sobel(channel, cv2.CV_32F, 1, 0, ksize=3)
+            gy = cv2.Sobel(channel, cv2.CV_32F, 0, 1, ksize=3)
+            mag = np.sqrt(gx * gx + gy * gy)
+            grads.append(mag)
+        grads = np.stack(grads, axis=2)
+        rms = np.sqrt(np.mean(grads ** 2, axis=2))
+        return rms
     grad = rms_gradient_rgb(smooth)
     gray = cv2.cvtColor(smooth, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -252,9 +299,8 @@ def watershed_segmentation(image_bgr, smooth_sigma=1.0):
     num_markers, markers = cv2.connectedComponents(sure_fg)
     markers = markers + 1
     markers[unknown == 255] = 0
-    img_for_ws = smooth.copy()
-    cv2.watershed(img_for_ws, markers)
-    labels = markers.copy()
+    markers_int = markers.astype(np.int32)
+    labels = watershed_from_markers(grad, markers_int)
     unique = np.unique(labels)
     rng = np.random.RandomState(12345)
     color_map = {}
@@ -270,7 +316,7 @@ def watershed_segmentation(image_bgr, smooth_sigma=1.0):
             out[y, x] = color_map.get(lab, (0, 0, 0))
     boundaries = (labels == -1)
     overlay = image_bgr.copy()
-    overlay[boundaries] = np.array((0, 0, 255), dtype=np.uint8)  
+    overlay[boundaries] = np.array((0, 0, 255), dtype=np.uint8)
     return labels, out, overlay
 
 def part_a_main(img_path, out_dir, k=5, auto_seed = True):
