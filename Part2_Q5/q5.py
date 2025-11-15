@@ -325,7 +325,7 @@ def main():
     parser.add_argument('--input', type=str, default='../Testcases/q5_3.jpg')
     parser.add_argument('--out', type=str, default='./Q5_Output')
     parser.add_argument('--part', type=str, choices=['A','B','C','all'], default='all')
-    parser.add_argument('--k', type=int, default=6)
+    parser.add_argument('--k', type=int, default=8)
     parser.add_argument('--auto_seed', type=bool, default=True)
     parser.add_argument('--num_superpixels', type=int, default=200)
     parser.add_argument('--compactness', type=float, default=15.0)

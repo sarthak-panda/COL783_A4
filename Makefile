@@ -127,15 +127,6 @@ else
 	. $(VENV_ACTIVATE) && cd Part2_Q3 && ../$(VENV_PYTHON) q3.py && cd ..
 endif
 
-.PHONY: q4
-q4: $(VENV_DIR)
-	@echo Running Q4...
-ifeq ($(OS),Windows_NT)
-	$(VENV_ACTIVATE) && cd Part2_Q4 && ..\$(VENV_PYTHON) q4.py && cd ..
-else
-	. $(VENV_ACTIVATE) && cd Part2_Q4 && ../$(VENV_PYTHON) q4.py && cd ..
-endif
-
 .PHONY: q5
 q5: $(VENV_DIR)
 	@echo Running Q5...
